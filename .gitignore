@@ -1,0 +1,10 @@
+# the usual suspects...
+.*
+# except these...
+!.gitignore
+!.gitattributes
+!.java-version
+
+# derived artifacts...
+/**/build/
+/**/out/

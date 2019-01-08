@@ -1,0 +1,97 @@
+1. Why?
+
+   Because our entity classes are coded in Groovy and the official annotation processor is incapable to process
+   Groovy sources.
+
+
+2. Organization
+
+   The project is divided into the main Exporter project, and test-projects.
+
+   This division is necessary because the test-projects need the Exporter in their buildscript classpath.
+
+   The main Exporter project is pure Java, it produces a jar that contains the Exporter, Package Scanner, and
+   JpaMetamodel Builder.
+
+   The test-projects exercise the Exporter on non-Java entity classes.
+
+
+3. Approach & Rationalizations
+
+   Unlike the annotation processor which analyzes source codes, the Exporter wires up a Hibernate SessionFactory
+   (with an in memory H2 database) and reverse engineers the SessionFactory's Metamodel's ManagedTypes into
+   JPA static metamodel sources.
+
+   Exporting by source code analysis can be hard, especially when it comes to deciding the AccessType (PROPERTY or FIELD)
+   of the JPA classes.  Difficulties encountered when trying to implement the Exporter by source code analysis
+   (ala Querydsl's GenericExporter) mainly revolves around classes that are used in containing classes of different
+   AccessTypes.  e.g. an @Embeddable is @Embedded in two @Entity classes, one with AccessType.PROPERTY, and the other
+   AccessType.FIELD.  The annotation processor seems to prefer AcessType.FIELD for the @Embeddable, even when the
+   @Embeddable is explicitly annotated with @Access(AccessType.PROPERTY).
+
+   Reverse engineering the ManagedTypes solved the source code analysis hurdles, and have the following benefits:
+
+   a. JPA static metamodels are generated using information from "the horse's mouth", no second guessing required.
+
+   b. Since a Hibernate SessionFactory is created, the entity model sources must be "sane".  The exporter doesn't have
+      to worry about any "weird" entity model sources which may not work with Hibernate in the first place.  This
+      greatly reduces the unit testing requirements.
+
+   However, having to create a Hibernate SessionFactory probably means the exporting process is too "heavy" to be
+   invoked for every build (unlike annotation processing).
+
+   Our approach is to invoke the Exporter manually, and check the generated metamodel source files into source control.
+   Only to repeat the export process when any entity model sources changes.
+
+   We understand there is the "school of never check anything reproducible into source control" but argue that this should
+   be an exception.  The reason the metamodel classes are required is because they are needed by other "normal" classes
+   to use the JPA Criteria API, which means the metamodels need to be on the compile classpath.  This requirement may lead
+   down to the "catch-22" or "chicken-and-egg" alley, and the hassle of IDE classpath configuration.  Having the generated
+   metamodel source controlled and at a stable location (e.g. src/generated) is potentially headache alleviating ;-)
+
+
+4. JpaModelExporter
+
+   Technically, JpaModelExporter only needs a JpaMetamodel to work its magic.  JpaMetamodel is simply a thin wrapper to
+   supply a javax.persistence.metamodel.Metamodel, and is java.io.Closeable to allow orderly cleanup (e.g. close the
+   SessionFactory) when the exporter has consumed the JPA Metamodel.
+
+   An AnnotatedClassesJpaMetamodelBuilder is provided to build a JpaMetamodel using annotated classes.
+
+   Anything that is capable of supplying a JpaMetamodel may be used in its place.  e.g. a custom JpaMetamodel builder
+   that wires up Hibernate by XML, or one which wires up a JPA EntityManagerFactory.
+
+   AnnotatedClassesJpaMetamodelBuilder requires the entity model classes to create a Hibernate SessionFactory, which
+   may be supplied to it manually, e.g. builder.addClasses("org.acme.Foo"), and/or by means of package scanning,
+   i.e. builder.addClasses(<classes-from-package-scanner>).
+
+   An AnnotatedJpaClassesPackageScanner is provided to find JPA classes (classes annotated with @Entity,
+   @MappedSuperclass, or @Embeddable) in packages.
+
+   AnnotatedJpaClassesPackageScanner uses the ClassLoader's getResources() function to traverse the package resources.
+   It only handles the URL protocols "file:" and "jar:file:" (which is sufficient for us).
+
+   Again, anything that is capable of supplying a collection of JPA classes may be used in its place.  e.g. a custom
+   package scanner which uses the Reflections or the Spring Framework library.
+
+
+5. The main Exporter project
+
+    Unit testing is achieved by generating 2 sets of JPA static metamodel source files; one by the JpaModelExporter, and
+    the other by the official annotation processor.  The two sets are than compared to verify that they are identical
+    semantically.
+
+
+6. The test-projects
+
+   The test-projects uses the JpaModelExporter to generate JPA static metamodel source files for entity classes coded in
+   the test language, e.g. test-groovy uses entity classes coded in Groovy.
+
+   Each test project should at least have a set of entity classes identical to those in the main Exporter project coded
+   in the test language, e.g. test-groovy classes in its package "jpamodelexp.test.mirror".
+
+   The generated JPA static metamodel source files are compared to those generated in the main Exporter project to verify
+   that they are identical.
+
+   At present, there is only a test-groovy project for testing Groovy entity classes.  There may be test-kotlin, test-scala,
+   etc, in the future.
