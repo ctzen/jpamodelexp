@@ -1,14 +1,12 @@
 package com.ctzen.jpamodelexp.gradle
 
-import org.gradle.process.internal.ExecException
-
 object Config {
 
     /**
      * Versions
      */
     object Vers {
-        const val gradle = "5.0"
+        const val gradle = "5.1"
         const val hibernate = "5.4.0.Final"
     }
 

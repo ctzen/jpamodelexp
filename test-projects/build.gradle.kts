@@ -13,10 +13,7 @@ buildscript {
     }
 }
 
-tasks {
-    "wrapper"(Wrapper::class) {
-        version = Config.superVers.gradle
-        distributionType = Wrapper.DistributionType.ALL
-    }
+tasks.wrapper {
+    version = Config.superVers.gradle
+    distributionType = Wrapper.DistributionType.ALL
 }
-

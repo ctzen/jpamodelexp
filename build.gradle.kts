@@ -183,9 +183,7 @@ artifactory {
     })
 }
 
-tasks {
-    "wrapper"(Wrapper::class) {
-        version = Config.Vers.gradle
-        distributionType = Wrapper.DistributionType.ALL
-    }
+tasks.wrapper {
+    version = Config.Vers.gradle
+    distributionType = Wrapper.DistributionType.ALL
 }
