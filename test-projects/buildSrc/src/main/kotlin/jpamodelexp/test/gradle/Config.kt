@@ -11,7 +11,7 @@ object Config {
      */
     object Deps {
         const val libJpaApi = "org.hibernate.javax.persistence:hibernate-jpa-2.1-api:1.0.2.Final"
-        const val libGroovy = "org.codehaus.groovy:groovy-all:2.4.16"
+        const val libGroovy = "org.codehaus.groovy:groovy-all:2.5.5"
     }
 
 }
