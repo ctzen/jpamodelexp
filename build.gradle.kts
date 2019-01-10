@@ -12,10 +12,10 @@ plugins {
     id("com.jfrog.artifactory") version "4.9.0"     // snapshots
 }
 
-val snapshot = true
+val snapshot = false
 
 group = "com.ctzen.jpamodelexp"
-version = "1.0.1" + (if (snapshot) "-SNAPSHOT" else "")
+version = "1.0.0" + (if (snapshot) "-SNAPSHOT" else "")
 description = "JPA Static Metamodel Exporter"
 
 fun gitRev(): String {
